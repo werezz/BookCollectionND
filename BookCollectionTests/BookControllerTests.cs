@@ -38,7 +38,7 @@ namespace BookCollectionTests
         [Test]
         public async Task GetBooks_ReturnsOk_WhenItemsAreFound()
         {
-            IEnumerable<Book> bookList = new Book[] { new Book { Id = 1, Auhtor = "Levas Tolstojus", ISBN = "978-1-60309-502-0", PublicationYear = 1878, Title = "Anna Karenina" } };
+            IEnumerable<Book> bookList = [new Book ("Anna Karenina", "Levas Tolstojus", "978-1-60309-502-0", 1878)];
 
             _bookService.GetAllBooks().Returns(Task.FromResult(bookList));
 
@@ -60,7 +60,7 @@ namespace BookCollectionTests
         [Test]
         public async Task DeleteBook_ReturnsNoContent_WhenResourceIsDeleted()
         {
-            _bookService.GetBookById(1).Returns(new Book { Id = 1, Auhtor = "Levas Tolstojus", ISBN = "978-1-60309-502-0", PublicationYear = 1878, Title = "Anna Karenina" });
+            _bookService.GetBookById(1).Returns(new Book ("Levas Tolstojus", "978-1-60309-502-0", "Anna Karenina", 1878));
 
             var result = await _bookController.DeleteBook(1);
             var okObjectResult = new OkObjectResult(result);

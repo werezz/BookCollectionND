@@ -2,7 +2,6 @@
 using BookCollection.Models;
 using BookCollection.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
 
 namespace BookCollection.Services
 {
@@ -13,11 +12,12 @@ namespace BookCollection.Services
         public BookService(AppDBContext context)
         {
             _context = context;
+            _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         }
 
         public async Task<IEnumerable<Book>> GetBooksByTerm(string term)
         {
-            return await _context.Books.Where(e => e.Auhtor.Contains(term) || e.Title.Contains(term)).ToListAsync();
+            return await _context.Books.Where(e => e.Author.Contains(term) || e.Title.Contains(term)).ToListAsync();
         }
 
         public async Task<IEnumerable<Book>> GetAllBooks()
@@ -56,40 +56,14 @@ namespace BookCollection.Services
             await _context.SaveChangesAsync();
         }
 
-        public bool CheckISBNFormat(string? input)
-        {
-            if (CheckISBNLenght(input) && CheckForLetters(input)) return true;
-            return false;
-        }
-
-        public bool CheckFutureYearFormat(int input)
-        {
-            DateTime localDate = DateTime.Now;
-            if (localDate.Year > input) return true;
-            return false;
-        }
         public Task<bool> BookExistsByISBN(string? isbn)
         {
             return _context.Books.AnyAsync(e => e.ISBN == isbn);
         }
 
-        private bool CheckISBNLenght(string? input)
+        public Task<bool> CheckIfUpdatingTheSameBook(string? isbn, int id)
         {
-            if (string.IsNullOrEmpty(input)) return false;
-
-            var ISBNStripped = Regex.Replace(input, "[^0-9]", "");
-
-            if (ISBNStripped.Length == 13) return true;
-
-            return false;
-        }
-
-        private bool CheckForLetters(string? input)
-        {
-            if (string.IsNullOrEmpty(input)) return false;
-
-            if (input.ToCharArray().All(c => char.IsLetter(c)) == false) return true;
-            return false;
+            return _context.Books.AnyAsync(e => e.ISBN == isbn && e.Id == id);
         }
     }
 }

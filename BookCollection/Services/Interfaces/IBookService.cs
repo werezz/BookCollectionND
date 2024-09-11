@@ -10,8 +10,7 @@ namespace BookCollection.Services.Interfaces
         Task AddBook(Book book);
         Task DeleteBook(Book book);
         Task<bool> BookExistsByISBN(string? isbn);
+        Task<bool> CheckIfUpdatingTheSameBook(string? isbn, int id);
         Task<IEnumerable<Book>> GetBooksByTerm(string term);
-        bool CheckISBNFormat(string? input);
-        bool CheckFutureYearFormat(int input);
     }
 }

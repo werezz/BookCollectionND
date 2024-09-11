@@ -1,5 +1,7 @@
-﻿using BookCollection.Models;
+﻿using BookCollection.DTOs;
+using BookCollection.Models;
 using BookCollection.Services.Interfaces;
+using BookCollection.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -38,7 +40,7 @@ namespace BookCollection.Controllers
                 return NotFound();
             }
 
-            return Ok(cachedBookList);
+            return Ok(cachedBookList.Select(book => book.ToBookDto()));
         }
 
         [MapToApiVersion("1")]
@@ -52,12 +54,12 @@ namespace BookCollection.Controllers
                 return NotFound();
             }
 
-            return Ok(book);
+            return Ok(book.ToBookDto());
         }
 
         [MapToApiVersion("1")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutBook(int id, Book book)
+        public async Task<IActionResult> PutBook(int id, UpdateBookDto bookDto)
         {
             var bookCheck = await _bookService.GetBookById(id);
             if (bookCheck == null)
@@ -65,66 +67,26 @@ namespace BookCollection.Controllers
                 return NotFound();
             }
 
-            if (id != book.Id)
+            if (!await _bookService.CheckIfUpdatingTheSameBook(bookDto.ISBN, id))
             {
-                return BadRequest($"Book with id = {id} does not match book to update BookId = {book.Id}");
+                return Conflict($"A book with provided ISBN already exist in another record ISBN = {bookDto.ISBN}");
             }
 
-            if (string.IsNullOrEmpty(book.Title))
-            {
-                return BadRequest($"The provided Title cannot be null or empty");
-            }
-
-            if (string.IsNullOrEmpty(book.Auhtor))
-            {
-                return BadRequest($"The provided Auhtor cannot be null or empty");
-            }
-
-            if (!_bookService.CheckISBNFormat(book.ISBN))
-            {
-                return BadRequest($"The provided ISBN is in bad format, ISBN = {book.ISBN}");
-            }
-
-            if (!_bookService.CheckFutureYearFormat(book.PublicationYear))
-            {
-                return BadRequest($"The provided PublicationYear is in the future, PublicationYear = {book.PublicationYear}");
-            }
-
-            await _bookService.UpdateBook(book);
+            await _bookService.UpdateBook(bookDto.ToBookEntity(id));
 
             return NoContent();
         }
 
         [MapToApiVersion("1")]
         [HttpPost]
-        public async Task<ActionResult<Book>> PostBook(Book book)
+        public async Task<ActionResult> PostBook(CreateBookDto bookDto)
         {
-            if (await _bookService.BookExistsByISBN(book.ISBN))
+            if (await _bookService.BookExistsByISBN(bookDto.ISBN))
             {
-                return Conflict($"A book with provided ISBN already exist ISBN = {book.ISBN}");
+                return Conflict($"A book with provided ISBN already exist ISBN = {bookDto.ISBN}");
             }
 
-            if (!_bookService.CheckISBNFormat(book.ISBN))
-            {
-                return BadRequest($"The provided ISBN is in bad format, ISBN = {book.ISBN}");
-            }
-
-            if (!_bookService.CheckFutureYearFormat(book.PublicationYear))
-            {
-                return BadRequest($"The provided PublicationYear is in the future, PublicationYear = {book.PublicationYear}");
-            }
-
-            if (string.IsNullOrEmpty(book.Title))
-            {
-                return BadRequest($"The provided Title cannot be null or empty");
-            }
-
-            if (string.IsNullOrEmpty(book.Auhtor))
-            {
-                return BadRequest($"The provided Auhtor cannot be null or empty");
-            }
-
-            await _bookService.AddBook(book);
+            await _bookService.AddBook(bookDto.ToBookEntity());
 
             return Created();
         }
@@ -155,7 +117,7 @@ namespace BookCollection.Controllers
                 return NoContent();
             }
 
-            return Ok(results);
+            return Ok(results.Select(book => book.ToBookDto()));
         }
     }
 }
